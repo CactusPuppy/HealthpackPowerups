@@ -1,0 +1,19 @@
+import "../main.ostw";
+import "../OSTWUtils/OnScreenText.del";
+import "../wheelSimulation.del";
+
+import "powerupConfig.del";
+import "stateMachine.del";
+
+Number flashStart: 33;
+Number flashEnd: 50;
+Number flashMinOpacity: 32;
+
+Number flashWeight(Player p = EventPlayer()): Min(1, Max(0, (p.powerupPercentLeft - flashStart) / (flashEnd - flashStart)));
+Number flashFactor(Player p = EventPlayer()): SineFromRadians(SquareRoot(18 * p.activePowerup.duration * p.powerupPercentLeft)) / 2 + 0.5;
+
+void RollRandomPowerup() playervar "[powerupStruct.del] Roll for a powerup from the list"
+{
+  powerupEvent = PlayerPowerupEvent.PICKUP;
+  DispatchPowerupEvent();
+}

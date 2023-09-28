@@ -1,0 +1,219 @@
+import "powerups/powerupStruct.del";
+
+enum WheelState {
+  SLOW_SPIN = "SLOW_SPIN",
+  NO_FRICTION = "NO_FRICTION",
+  FRICTION = "FRICTION",
+  SNAPPING = "SNAPPING",
+  STOPPED = "STOPPED"
+}
+
+enum WheelEvent {
+  NONE,
+  // SWITCH_WHEEL,
+  START_SPIN,
+  BEGIN_SLOWDOWN,
+  MANUAL_STOP_SPIN,
+  SELF_STOP_SPIN
+}
+
+playervar Number currentWheelIndex;
+playervar Number currentAngularSpeed;
+playervar Number outstandingAngularBalance = 0.5;
+playervar Number randomSlowIndex;
+playervar Boolean frictionEnabled;
+playervar Boolean slowPanFlag;
+
+playervar WheelState wheelState = WheelState.STOPPED;
+playervar WheelEvent wheelEvent = WheelEvent.NONE;
+
+Number ANGULAR_FRICTION: 0.75;
+Number MINIMUM_FRICTION_VELOCITY: 5.0;
+Number UPDATE_FREQUENCY: 0.016;
+Number EPSILON: 0.05;
+
+Number NUMBER_OF_WHEEL_ITEMS: possiblePowerups.Length;
+
+Boolean IsWheelSpinning(): [WheelState.FRICTION, WheelState.NO_FRICTION].Contains(wheelState);
+
+void DispatchWheelEvent() '[wheelSimulation.del] Dispatch a wheel event to the appropriate handler' {
+  WheelStateMachine();
+  wheelEvent = WheelEvent.NONE;
+}
+
+void WheelStateMachine() "[wheelSimulation.del] Wheel State Machine" {
+  switch (wheelState) {
+    // case WheelState.SLOW_SPIN:
+    //   HandleWheelEvent_SLOW_SPIN();
+    //   break;
+
+    case WheelState.STOPPED:
+      HandleWheelEvent_STOPPED();
+      break;
+
+    case WheelState.NO_FRICTION:
+      HandleWheelEvent_NO_FRICTION();
+      break;
+
+    case WheelState.FRICTION:
+      HandleWheelEvent_FRICTION();
+      break;
+
+    case WheelState.SNAPPING:
+      HandleWheelEvent_SNAPPING();
+      break;
+
+    default:
+  }
+}
+
+// void HandleWheelEvent_SLOW_SPIN() "[wheelSimulation.del] Handle a wheel event in SLOW_SPIN state" {
+//   switch (wheelEvent) {
+//     case WheelEvent.START_SPIN:
+//       currentAngularSpeed = 25;
+//       StopChasingVariable(outstandingAngularBalance);
+//       ChaseVariableAtRate(outstandingAngularBalance, 100, currentAngularSpeed, RateChaseReevaluation.DestinationAndRate);
+
+//       randomSlowIndex = RandomInteger(0, NUMBER_OF_WHEEL_ITEMS);
+
+//       wheelState = WheelState.NO_FRICTION;
+
+//     case WheelEvent.MANUAL_STOP_SPIN:
+//       StopChasingVariable(outstandingAngularBalance);
+//       SmallMessage(AllPlayers(), $" {IconString(Icon.Warning)}  Slow spin stopped");
+
+//       StartSnapping();
+//       wheelState = WheelState.SNAPPING;
+
+//     case WheelEvent.SWITCH_WHEEL:
+//       currentIndex = 0;
+//       outstandingAngularBalance = 0;
+//       StopChasingVariable(outstandingAngularBalance);
+//       ChaseVariableAtRate(outstandingAngularBalance, 100, 0.67, RateChaseReevaluation.None);
+//       async ForceBalanceResync();
+//       wheelState = WheelState.SLOW_SPIN;
+
+//     default:
+//       return;
+//   }
+// }
+
+void HandleWheelEvent_NO_FRICTION() "[wheelSimulation.del] Handle a wheel event in NO_FRICTION state" {
+  switch (wheelEvent) {
+    case WheelEvent.BEGIN_SLOWDOWN:
+      # We have to pull this number out of the chase because otherwise the client and server will disagree.
+      Number randomScalar = RandomReal(0.8, 1.2);
+      ChaseVariableAtRate(currentAngularSpeed, 0, randomScalar * ANGULAR_FRICTION * Max(currentAngularSpeed, MINIMUM_FRICTION_VELOCITY), RateChaseReevaluation.DestinationAndRate);
+
+      wheelState = WheelState.FRICTION;
+      break;
+    case WheelEvent.MANUAL_STOP_SPIN:
+      // SmallMessage(AllPlayers(), $" {IconString(Icon.Warning)}  Wheel was manually stopped");
+      currentAngularSpeed = 0;
+      StopChasingVariable(outstandingAngularBalance);
+
+      StartSnapping();
+      wheelState = WheelState.SNAPPING;
+      break;
+  }
+}
+
+void HandleWheelEvent_FRICTION() "[wheelSimulation.del] Handle a wheel event in FRICTION state" {
+  switch (wheelEvent) {
+    case WheelEvent.MANUAL_STOP_SPIN:
+    case WheelEvent.SELF_STOP_SPIN:
+      StopChasingVariable(currentAngularSpeed);
+      currentAngularSpeed = 0;
+      StopChasingVariable(outstandingAngularBalance);
+
+      StartSnapping();
+      wheelState = WheelState.SNAPPING;
+      break;
+  }
+}
+
+void HandleWheelEvent_SNAPPING() "[wheelSimulation.del] Handle a wheel event in SNAPPING state" {
+  switch (wheelEvent) {
+    case WheelEvent.SELF_STOP_SPIN:
+      StopChasingVariable(outstandingAngularBalance);
+      wheelState = WheelState.STOPPED;
+      break;
+  }
+}
+
+void HandleWheelEvent_STOPPED() "[wheelSimulation.del] Handle a wheel event in STOPPED state" {
+  switch (wheelEvent) {
+    case WheelEvent.START_SPIN:
+      currentAngularSpeed = 25;
+      StopChasingVariable(outstandingAngularBalance);
+      ChaseVariableAtRate(outstandingAngularBalance, 100, currentAngularSpeed, RateChaseReevaluation.DestinationAndRate);
+
+      randomSlowIndex = RandomInteger(0, NUMBER_OF_WHEEL_ITEMS);
+
+      wheelState = WheelState.NO_FRICTION;
+      break;
+  }
+}
+
+void StartSnapping() "[wheelSimulation.del] Start snapping wheel to closest selection" {
+  Wait(0.2);
+  StopChasingVariable(outstandingAngularBalance);
+  ChaseVariableAtRate(outstandingAngularBalance, 0.5, 10 * AbsoluteValue(0.5 - outstandingAngularBalance), RateChaseReevaluation.DestinationAndRate);
+}
+
+rule: "[wheelSimulation.del] When wheel is in the NO_FRICTION state, wait until the randomSlowIndex is reached to enter FRICTION state"
+Event.OngoingPlayer
+if (wheelState == WheelState.NO_FRICTION)
+{
+  WaitUntil(currentWheelIndex == randomSlowIndex || wheelState != WheelState.NO_FRICTION, 4);
+  AbortIf(wheelState != WheelState.NO_FRICTION);
+
+  wheelEvent = WheelEvent.BEGIN_SLOWDOWN;
+  DispatchWheelEvent();
+}
+
+rule: "[wheelSimulation.del] When wheel is in FRICTION state and currentAngularSpeed is 0, dispatch STOP_SPIN to move to SNAPPING"
+Event.OngoingPlayer
+if (wheelState == WheelState.FRICTION)
+if (currentAngularSpeed == 0)
+{
+  wheelEvent = WheelEvent.SELF_STOP_SPIN;
+  DispatchWheelEvent();
+}
+
+rule: "[wheelSimulation.del] When snapping is done, STOP_SPIN again to fully stop wheel"
+Event.OngoingPlayer
+if (wheelState == WheelState.SNAPPING)
+if (AbsoluteValue(outstandingAngularBalance - 0.5) < 0.005)
+{
+  wheelEvent = WheelEvent.SELF_STOP_SPIN;
+  DispatchWheelEvent();
+}
+
+rule: "[wheelSimulation.del] Process ticking over to a new selection"
+Event.OngoingPlayer
+if (wheelState != WheelState.STOPPED)
+{
+  if (outstandingAngularBalance >= 1) {
+    currentWheelIndex += RoundToInteger(outstandingAngularBalance, Rounding.Down);
+    outstandingAngularBalance = outstandingAngularBalance % 1;
+
+    PlayEffect(EventPlayer(), PlayEffect.Soldier76SprintStartSound, Color.White, EyePosition(), 200);
+    PlayEffect(EventPlayer(), PlayEffect.DvaMicroMissilesExplosionSound, Color.White, EyePosition(), 10);
+
+    ClampWheelIndex();
+  }
+  MinWait();
+  LoopIfConditionIsTrue();
+}
+
+void ForceBalanceResync() "[wheelSimulation.del] Force client-server resync of outstandingAngularBalance" {
+  Wait(0.064);
+  # OSTW pls no optimize thx :)
+  outstandingAngularBalance = DoNotOptimize(outstandingAngularBalance + 0);
+}
+
+void ClampWheelIndex() "[wheelSimulation.del] Clamp wheel index"
+{
+  if (currentWheelIndex >= NUMBER_OF_WHEEL_ITEMS) currentWheelIndex = currentWheelIndex % NUMBER_OF_WHEEL_ITEMS;
+}

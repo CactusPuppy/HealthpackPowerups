@@ -1,0 +1,94 @@
+import "settings.lobby";
+globalvar Boolean DEBUG_MODE = WorkshopSettingToggle("Debug", "Debug Mode Enabled", false, 0);
+globalvar Boolean DEBUG_FORCE_POWERUP = WorkshopSettingToggle("Debug", "Force Specific Powerup", false, 1);
+globalvar Number DEBUG_POWERUP_INDEX = WorkshopSettingCombo("Debug", "Powerup To Force", 0,
+  ["Speed", "Invisibility", "Shrink", "Grow", "Quad Damage", "Infinite Ammo",
+  "Blind", "Aimbot", "Run it Back", "Faster Cooldowns", "Deadeye"], 2);
+
+rule: "[main.del] If not debugging, disable Inspector"
+if (DEBUG_MODE == false)
+{
+  DisableInspectorRecording();
+}
+
+rule: "[main.del] Set up top HUD"
+{
+  CreateHudText(
+    AllPlayers(),
+    Subheader: <"Code: ?????<0>", DEBUG_MODE ? " | DEBUG MODE ENABLED" : "">,
+    Location: Location.Top,
+    SortOrder: -10,
+    SubheaderColor: DEBUG_MODE ? rainbow : Color.White,
+    Reevaluation: HudTextRev.VisibleToAndColor,
+    Spectators: Spectators.VisibleAlways
+  );
+}
+
+// import "powerupClass.del";
+import "powerups/powerupStruct.del";
+
+rule: "[main.ostw] When a player picks up a healthpack, issue a PICKUP event"
+Event.OnHealingTaken
+if (EventWasHealthPack())
+{
+  powerupEvent = PlayerPowerupEvent.PICKUP;
+  DispatchPowerupEvent();
+}
+
+disabled rule: "[main.ostw] healing event debug"
+Event.OnHealingTaken
+if (DEBUG_MODE)
+{
+  SmallMessage(EventPlayer(), <"AMT: <0> | WAS HP: <1>", EventHealing(), EventWasHealthPack()>);
+}
+
+rule: "[main.ostw] melee damage debug"
+Event.OngoingPlayer
+if (DEBUG_MODE)
+if (IsMeleeing())
+{
+  Damage(EventPlayer(), null, 50);
+}
+
+rule: "[main.ostw] When a player dies, issue a DROP event"
+Event.OnDeath
+{
+  powerupEvent = PlayerPowerupEvent.DROP;
+  DispatchPowerupEvent();
+}
+
+rule: "[main.ostw] Handle Interact press"
+Event.OngoingPlayer
+if (EventPlayer().IsButtonHeld(Button.Interact))
+{
+  // if (DEBUG_MODE) {
+  //   switch (powerupState) {
+  //     case PlayerPowerupState.ACQUIRING:
+  //     case PlayerPowerupState.USING:
+  //       powerupEvent = PlayerPowerupEvent.JAM_WHEEL;
+  //       break;
+  //     case PlayerPowerupState.READY:
+  //       powerupEvent = PlayerPowerupEvent.ACTIVATE;
+  //       break;
+  //     case PlayerPowerupState.USING:
+  //       powerupEvent = PlayerPowerupEvent.DEACTIVATE;
+  //       break;
+  //     default:
+  //       rolledPowerupIndex = DEBUG_POWERUP_INDEX;
+  //       powerupEvent = PlayerPowerupEvent.PICKUP;
+  //   }
+  //   DispatchPowerupEvent();
+  //   return;
+  // }
+
+  switch (powerupState) {
+    case PlayerPowerupState.ACQUIRING:
+    case PlayerPowerupState.USING:
+      powerupEvent = PlayerPowerupEvent.JAM_WHEEL;
+      break;
+
+    default:
+      powerupEvent = PlayerPowerupEvent.ACTIVATE;
+  }
+  DispatchPowerupEvent();
+}

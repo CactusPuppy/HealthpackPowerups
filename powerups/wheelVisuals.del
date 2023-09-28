@@ -1,0 +1,102 @@
+import "stateMachine.del";
+
+Number clampedIndex(Number index, Number base): ((index % base) + base) % base;
+
+Number wheelYCenter: -0.15;
+Number wheelYSpread: 0.1;
+
+// Rainbow code by PharingWell and Provoxin
+Number rSaturation: 0.5;
+Number rValue: 1.0;
+
+Number rMin(Number rSaturation = rSaturation, Number rValue = rValue): 255 * (1-rSaturation) * (rValue);
+Number rMax(Number rSaturation = rSaturation, Number rValue = rValue): 255 * rValue;
+Number rMod: (rMax() - rMin()) * 6;
+Number rOffset: rMax() - 2 * rMin();
+
+Number rainbow_R(Number t): Min(Max(AbsoluteValue(((t + (0*rMod)/3) % rMod) - rMod/2) - rOffset, rMin()), rMax());
+Number rainbow_G(Number t): Min(Max(AbsoluteValue(((t + (1*rMod)/3) % rMod) - rMod/2) - rOffset, rMin()), rMax());
+Number rainbow_B(Number t): Min(Max(AbsoluteValue(((t + (2*rMod)/3) % rMod) - rMod/2) - rOffset, rMin()), rMax());
+Color rainbow: CustomColor(rainbowVector.X, rainbowVector.Y, rainbowVector.Z, 255);
+
+globalvar Vector rainbowVector = Vector(0,0,0);
+Number rainbowRate: 900;
+rule: "[wheelVisuals.del] Start chasing rainbowVector"
+{
+  ChaseVariableAtRate(
+    rainbowVector,
+    Vector(
+      rainbow_R(TotalTimeElapsed() * rainbowRate),
+      rainbow_G(TotalTimeElapsed() * rainbowRate),
+      rainbow_B(TotalTimeElapsed() * rainbowRate)),
+    99999,
+    RateChaseReevaluation.DestinationAndRate);
+}
+
+playervar Any[] powerupWheelTexts = [];
+
+void CreatePowerupWheelVisuals() {
+  # Main selection
+  powerupWheelTexts[0] = OnScreenText.CreateOnScreenText(
+    Header: <"<0> <1>", possiblePowerups[currentWheelIndex].icon, possiblePowerups[currentWheelIndex].name>,
+    // Header: currentWheelIndex,
+    PositionY: (wheelYCenter - wheelYSpread / 2) + outstandingAngularBalance * wheelYSpread,
+    Scale: 1.2,
+    Reevaluation: InworldTextRev.VisibleToPositionStringAndColor,
+    Color: powerupState == PlayerPowerupState.READY
+      ? CustomColor(possiblePowerups[currentWheelIndex].color_R, possiblePowerups[currentWheelIndex].color_G, possiblePowerups[currentWheelIndex].color_B, 255)
+      : IsWheelSpinning() ? Color.Yellow : CustomColor(127, 127, 127, 127),
+    Spectators: Spectators.VisibleNever,
+    PerspectivePlayer: EventPlayer()
+  );
+
+  # Auxiliary visuals
+  powerupWheelTexts[1] = OnScreenText.CreateOnScreenText(
+    Header: <"<0> <1>",
+      possiblePowerups[clampedIndex(currentWheelIndex - 1, possiblePowerups.Length)].icon,
+      possiblePowerups[clampedIndex(currentWheelIndex - 1, possiblePowerups.Length)].name>,
+    // Header: clampedIndex(currentWheelIndex - 1, possiblePowerups.Length),
+    PositionY: (wheelYCenter - wheelYSpread / 2) + (outstandingAngularBalance + 1) * wheelYSpread,
+    Scale: 1.2,
+    Reevaluation: InworldTextRev.VisibleToPositionStringAndColor,
+    Color: CustomColor(255, 255, 255, 255 * (1 - outstandingAngularBalance)),
+    Spectators: Spectators.VisibleNever,
+    PerspectivePlayer: EventPlayer()
+  );
+  powerupWheelTexts[2] = OnScreenText.CreateOnScreenText(
+    Header: <"<0> <1>",
+      possiblePowerups[clampedIndex(currentWheelIndex + 1, possiblePowerups.Length)].icon,
+      possiblePowerups[clampedIndex(currentWheelIndex + 1, possiblePowerups.Length)].name>,
+    // Header: clampedIndex(currentWheelIndex + 1, possiblePowerups.Length),
+    PositionY: (wheelYCenter - wheelYSpread / 2) + (outstandingAngularBalance - 1) * wheelYSpread,
+    Scale: 1.2,
+    Reevaluation: InworldTextRev.VisibleToPositionStringAndColor,
+    Color: CustomColor(255, 255, 255, 255 * outstandingAngularBalance),
+    Spectators: Spectators.VisibleNever,
+    PerspectivePlayer: EventPlayer()
+  );
+}
+
+void RemoveAuxiliaryWheelVisuals() {
+  DestroyInWorldText(powerupWheelTexts[1]);
+  DestroyInWorldText(powerupWheelTexts[2]);
+}
+
+void AddUseButtonPrompt() {
+  powerupWheelTexts[3] = OnScreenText.CreateOnScreenText(
+    Header: <"Press <0> to use", InputBindingString(Button.Interact)>,
+    PositionY: (wheelYCenter - wheelYSpread / 2) + (outstandingAngularBalance + 1) * wheelYSpread,
+    Scale: 1.2,
+    Reevaluation: InworldTextRev.VisibleToPositionStringAndColor,
+    Color: rainbow,
+    Spectators: Spectators.VisibleNever,
+    PerspectivePlayer: EventPlayer()
+  );
+}
+
+void RemoveAllWheelVisuals() {
+  while (powerupWheelTexts.Length > 0) {
+    DestroyInWorldText(powerupWheelTexts[0]);
+    powerupWheelTexts.ModRemoveByIndex(0);
+  }
+}

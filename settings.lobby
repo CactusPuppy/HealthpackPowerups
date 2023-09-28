@@ -1,0 +1,20 @@
+{
+  "Mode Name": "Health Pack Powerups",
+  "Description": "Ever felt like health packs didn't do enough for you? Well, now you'll gain a random powerup when you pick up a healthpack. Have fun!",
+  "Modes": {
+    "All": {
+      "Competitive Rules": true,
+      "Limit Roles": "1 Tank 2 Offense 2 Support"
+    },
+    "Control": {},
+    "Escort": {},
+    "Flashpoint": {},
+    "Hybrid": {},
+    "Push": {}
+  },
+  "Extensions": {
+    "Buff Status Effects": true,
+    "Buff and Debuff Sounds": true,
+    "Explosion Sounds": true
+  }
+}

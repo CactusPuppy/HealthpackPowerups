@@ -1,0 +1,239 @@
+import "powerupStruct.del";
+import "wheelVisuals.del";
+
+enum PlayerPowerupState {
+  NONE = "NONE",
+  ACQUIRING = "ACQUIRING",
+  READY = "READY",
+  USING = "USING"
+}
+
+enum PlayerPowerupEvent {
+  NONE = "NONE",
+  PICKUP = "PICKUP",
+  DROP = "DROP",
+  JAM_WHEEL = "JAM_WHEEL",
+  ROLL_FINISH = "ROLL_FINISH",
+  ACTIVATE = "ACTIVATE",
+  DEACTIVATE = "DEACTIVATE"
+}
+
+playervar PlayerPowerupState powerupState = PlayerPowerupState.NONE;
+playervar PlayerPowerupEvent powerupEvent = PlayerPowerupEvent.NONE;
+
+playervar Number rolledPowerupIndex = -1;
+
+void DispatchPowerupEvent() playervar "[powerups/stateMachine.del] Handle powerup event"
+{
+  switch (powerupState) {
+    case PlayerPowerupState.NONE:
+      Handle_PPS_NONE();
+      break;
+
+    case PlayerPowerupState.ACQUIRING:
+      Handle_PPS_ACQUIRING();
+      break;
+
+    case PlayerPowerupState.READY:
+      Handle_PPS_READY();
+      break;
+
+    case PlayerPowerupState.USING:
+      Handle_PPS_USING();
+      break;
+  }
+  powerupEvent = PlayerPowerupEvent.NONE;
+}
+
+void Handle_PPS_NONE() playervar "[powerups/stateMachine.del] Handle powerup event in NONE state"
+{
+  switch (powerupEvent) {
+    case PlayerPowerupEvent.PICKUP:
+      # Pick a random powerup
+      if (DEBUG_MODE && DEBUG_FORCE_POWERUP) {
+        currentWheelIndex = DEBUG_POWERUP_INDEX;
+        rolledPowerupIndex = currentWheelIndex;
+        CreatePowerupWheelVisuals();
+        RemoveAuxiliaryWheelVisuals();
+        AddUseButtonPrompt();
+        powerupState = PlayerPowerupState.READY;
+        break;
+      }
+
+      CreatePowerupWheelVisuals();
+
+      wheelEvent = WheelEvent.START_SPIN;
+      DispatchWheelEvent();
+
+      powerupState = PlayerPowerupState.ACQUIRING;
+      break;
+  }
+}
+
+void Handle_PPS_ACQUIRING() playervar "[powerups/stateMachine.del] Handle powerup event in ACQUIRING state"
+{
+  switch (powerupEvent) {
+    case PlayerPowerupEvent.JAM_WHEEL:
+      wheelEvent = WheelEvent.MANUAL_STOP_SPIN;
+      DispatchWheelEvent();
+    case PlayerPowerupEvent.ROLL_FINISH:
+      RemoveAuxiliaryWheelVisuals();
+      AddUseButtonPrompt();
+      rolledPowerupIndex = currentWheelIndex;
+
+      powerupState = PlayerPowerupState.READY;
+      break;
+
+
+    // The player died while acquiring a powerup
+    case PlayerPowerupEvent.DROP:
+      rolledPowerupIndex = -1;
+      wheelEvent = WheelEvent.MANUAL_STOP_SPIN;
+      DispatchWheelEvent();
+      RemoveAllWheelVisuals();
+
+      powerupState = PlayerPowerupState.NONE;
+      break;
+  }
+}
+
+void Handle_PPS_READY() playervar "[powerups/stateMachine.del] Handle powerup event in READY state"
+{
+  switch (powerupEvent) {
+    case PlayerPowerupEvent.ACTIVATE:
+      RemoveAllWheelVisuals();
+
+      activePowerup = possiblePowerups[rolledPowerupIndex];
+      rolledPowerupIndex = -1;
+
+      # Start a timer until the powerup is done
+      powerupPercentLeft = 100;
+      ChaseVariableOverTime(powerupPercentLeft, 0, activePowerup.duration, TimeChaseReevaluation.None);
+
+      # Create a powerup HUD
+      CreateProgressBarHudText(
+        EventPlayer(),
+        powerupPercentLeft,
+        <"<0> <1>", activePowerup.icon, activePowerup.name>,
+        // <"Weight: <0> | Factor: <1> | Result: <2>", flashWeight(), flashFactor(), (flashWeight() + (1 - flashWeight()) * flashFactor()) * 255>,
+        Location.Left,
+        -10,
+        CustomColor(
+          activePowerup.color_R,
+          activePowerup.color_G,
+          activePowerup.color_B,
+          (flashWeight() + (1 - flashWeight()) * flashFactor()) * (255 - flashMinOpacity) + flashMinOpacity
+        ),
+        Color.White,
+        ProgressBarHudEvaluation.VisibleToValuesAndColor,
+        NonteamSpectators: Spectators.VisibleNever
+      );
+      powerupTimerHUD = LastTextID();
+
+      # Activate the powerup
+      activePowerup.OnPowerupActivation(EventPlayer());
+
+      SmallMessage(AllPlayers(), <" <0>  <1> activated <2>", activePowerup.icon, EventPlayer(), activePowerup.name>);
+
+      powerupState = PlayerPowerupState.USING;
+      break;
+
+    case PlayerPowerupEvent.DROP:
+      rolledPowerupIndex = -1;
+      RemoveAllWheelVisuals();
+
+      powerupState = PlayerPowerupState.NONE;
+      break;
+  }
+}
+
+void Handle_PPS_USING() playervar "[powerups/stateMachine.del] Handle powerup event in USING state"
+{
+  switch (powerupEvent) {
+    case PlayerPowerupEvent.PICKUP:
+      AbortIf(IsWheelSpinning() || rolledPowerupIndex != -1);
+      if (DEBUG_MODE && DEBUG_FORCE_POWERUP) {
+        currentWheelIndex = DEBUG_POWERUP_INDEX;
+        rolledPowerupIndex = currentWheelIndex;
+        CreatePowerupWheelVisuals();
+        RemoveAuxiliaryWheelVisuals();
+        break;
+      }
+
+      # Pick a random powerup
+      CreatePowerupWheelVisuals();
+      wheelEvent = WheelEvent.START_SPIN;
+      DispatchWheelEvent();
+      break;
+    case PlayerPowerupEvent.JAM_WHEEL:
+      wheelEvent = WheelEvent.MANUAL_STOP_SPIN;
+      DispatchWheelEvent();
+    case PlayerPowerupEvent.ROLL_FINISH:
+      rolledPowerupIndex = currentWheelIndex;
+      RemoveAuxiliaryWheelVisuals();
+      break;
+    case PlayerPowerupEvent.DROP:
+      rolledPowerupIndex = -1;
+      wheelEvent = WheelEvent.MANUAL_STOP_SPIN;
+      DispatchWheelEvent();
+      RemoveAllWheelVisuals();
+    case PlayerPowerupEvent.DEACTIVATE:
+      # Let the powerup clean up itself first
+      activePowerup.OnPowerupDeactivation(EventPlayer());
+
+      # Destroy all the effects used for the powerup
+      while (powerupEffects.Length > 0) {
+        DestroyEffect(powerupEffects[0]);
+        powerupEffects.ModRemoveByIndex(0);
+      }
+      # Destroy all the texts used for the powerup
+      while (powerupIWTs.Length > 0) {
+        DestroyInWorldText(powerupIWTs[0]);
+        powerupIWTs.ModRemoveByIndex(0);
+      }
+      # Destroy all health pools used for the powerup
+      while (powerupHealthPools.Length > 0) {
+        RemoveHealthPoolFromPlayer(powerupHealthPools[0]);
+        powerupHealthPools.ModRemoveByIndex(0);
+      }
+
+      # Destroy the powerup HUD
+      DestroyProgressBarHudText(powerupTimerHUD);
+
+      # Unset the player's activePowerup
+      activePowerup = null;
+
+      # If we have a rolled powerup, immediately move back to READY
+      if (rolledPowerupIndex != -1) {
+        AddUseButtonPrompt();
+        powerupState = PlayerPowerupState.READY;
+        break;
+      }
+      # Otherwise, if we're currently spinning for an item, move to the ACQUIRING state
+      if ([WheelState.FRICTION, WheelState.NO_FRICTION].Contains(wheelState)) {
+        powerupState = PlayerPowerupState.ACQUIRING;
+        break;
+      }
+      powerupState = PlayerPowerupState.NONE;
+      break;
+
+  }
+}
+
+rule: "[powerups/stateMachine.del] When the wheel starts spinning, wait until the wheel stops (or snapping) and signal the state machine"
+Event.OngoingPlayer
+if ([WheelState.FRICTION, WheelState.NO_FRICTION].Contains(wheelState))
+{
+  WaitUntil(![WheelState.FRICTION, WheelState.NO_FRICTION].Contains(wheelState), 99999);
+  powerupEvent = PlayerPowerupEvent.ROLL_FINISH;
+  DispatchPowerupEvent();
+}
+
+rule: "[powerups/stateMachine.del] When a player is using a powerup, wait until the powerup is done or the player dies to deactivate it"
+Event.OngoingPlayer
+if (powerupState == PlayerPowerupState.USING)
+{
+  WaitUntil(powerupPercentLeft == 0, 99999);
+  powerupEvent = PlayerPowerupEvent.DEACTIVATE;
+  DispatchPowerupEvent();
+}
