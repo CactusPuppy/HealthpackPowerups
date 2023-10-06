@@ -1,0 +1,34 @@
+import "powerupStruct.del";
+
+single struct RespawnLocation {
+  public Vector position;
+  public Vector facing;
+}
+
+playervar RespawnLocation runItBackAnchor = null;
+
+rule: "[powerups/runItBack.ostw] If player dies with Run It Back active and a valid anchor is set, recover them"
+Event.OnDeath
+if (activePowerup.name == PowerupType.RUN_IT_BACK)
+if (powerupState == PlayerPowerupState.USING)
+if (runItBackAnchor != null)
+{
+  async! RunItBack();
+
+  if (activePowerup.name == PowerupType.RUN_IT_BACK) {
+    powerupEvent = PlayerPowerupEvent.DEACTIVATE;
+    DispatchPowerupEvent();
+  }
+}
+
+void RunItBack() playervar "[powerups/runItBack.ostw] Trigger the return to the anchor"
+{
+  Teleport(EventPlayer(), runItBackAnchor.position);
+  # Wait for this to actually happen
+  WaitUntil(DistanceBetween(runItBackAnchor.position, EventPlayer()) < 1, 0.25);
+  Resurrect(EventPlayer());
+  StartFacing(EventPlayer(), runItBackAnchor.facing, 1000, Relative.ToWorld, FacingRev.None);
+  WaitUntil(AngleBetweenVectors(FacingDirectionOf(), runItBackAnchor.facing) < 0.1, 0.5);
+  StopFacing(EventPlayer());
+  runItBackAnchor = null;
+}

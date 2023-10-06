@@ -199,7 +199,7 @@ if (wheelState != WheelState.STOPPED)
     outstandingAngularBalance = outstandingAngularBalance % 1;
 
     PlayEffect(EventPlayer(), PlayEffect.Soldier76SprintStartSound, Color.White, EyePosition(), 200);
-    PlayEffect(EventPlayer(), PlayEffect.DvaMicroMissilesExplosionSound, Color.White, EyePosition(), 10);
+    // PlayEffect(EventPlayer(), PlayEffect.DvaMicroMissilesExplosionSound, Color.White, EyePosition(), 10);
 
     ClampWheelIndex();
   }

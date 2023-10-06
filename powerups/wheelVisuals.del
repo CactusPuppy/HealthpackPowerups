@@ -63,6 +63,7 @@ void CreatePowerupWheelVisuals() {
     Spectators: Spectators.VisibleNever,
     PerspectivePlayer: EventPlayer()
   );
+  if (powerupWheelTexts[2]) DestroyInWorldText(powerupWheelTexts[2]);
   powerupWheelTexts[2] = OnScreenText.CreateOnScreenText(
     Header: <"<0> <1>",
       possiblePowerups[clampedIndex(currentWheelIndex + 1, possiblePowerups.Length)].icon,
@@ -83,6 +84,8 @@ void RemoveAuxiliaryWheelVisuals() {
 }
 
 void AddUseButtonPrompt() {
+  # Failsafe
+  if (powerupWheelTexts[3]) DestroyInWorldText(powerupWheelTexts[3]);
   powerupWheelTexts[3] = OnScreenText.CreateOnScreenText(
     Header: <"Press <0> to use", InputBindingString(Button.Interact)>,
     PositionY: (wheelYCenter - wheelYSpread / 2) + (outstandingAngularBalance + 1) * wheelYSpread,

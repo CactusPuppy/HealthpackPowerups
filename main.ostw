@@ -1,9 +1,9 @@
 import "settings.lobby";
-globalvar Boolean DEBUG_MODE = WorkshopSettingToggle("Debug", "Debug Mode Enabled", false, 0);
-globalvar Boolean DEBUG_FORCE_POWERUP = WorkshopSettingToggle("Debug", "Force Specific Powerup", false, 1);
-globalvar Number DEBUG_POWERUP_INDEX = WorkshopSettingCombo("Debug", "Powerup To Force", 0,
+globalvar Boolean DEBUG_MODE = WorkshopSettingToggle("°Debug", "Debug Mode Enabled", false, 0);
+globalvar Boolean DEBUG_FORCE_POWERUP = WorkshopSettingToggle("°Debug", "Force Specific Powerup", false, 1);
+globalvar Number DEBUG_POWERUP_INDEX = WorkshopSettingCombo("°Debug", "Powerup To Force", 0,
   ["Speed", "Invisibility", "Shrink", "Grow", "Quad Damage", "Infinite Ammo",
-  "Blind", "Aimbot", "Run it Back", "Faster Cooldowns", "Deadeye"], 2);
+  "Blind", "Aimbot", "Run it Back", "Faster Cooldowns", "Bullet Bob"], 2);
 
 rule: "[main.del] If not debugging, disable Inspector"
 if (DEBUG_MODE == false)
@@ -15,7 +15,7 @@ rule: "[main.del] Set up top HUD"
 {
   CreateHudText(
     AllPlayers(),
-    Subheader: <"Code: ?????<0>", DEBUG_MODE ? " | DEBUG MODE ENABLED" : "">,
+    Subheader: <"Healthpack Powerups By CactusPuppy | Code: VY5YF<0>", DEBUG_MODE ? " | DEBUG MODE ENABLED" : "">,
     Location: Location.Top,
     SortOrder: -10,
     SubheaderColor: DEBUG_MODE ? rainbow : Color.White,
@@ -35,19 +35,41 @@ if (EventWasHealthPack())
   DispatchPowerupEvent();
 }
 
-disabled rule: "[main.ostw] healing event debug"
-Event.OnHealingTaken
+disabled rule: "[DEBUG] Show debug info HUD"
 if (DEBUG_MODE)
 {
-  SmallMessage(EventPlayer(), <"AMT: <0> | WAS HP: <1>", EventHealing(), EventWasHealthPack()>);
+  CreateHudText(
+    AllPlayers(),
+    <"PRI: <0> | SEC: <1>", IsFiringPrimary(LocalPlayer()), IsFiringSecondary(LocalPlayer())>,
+    Reevaluation: HudTextRev.VisibleToAndString
+  );
 }
 
-rule: "[main.ostw] melee damage debug"
+playervar Any TempHealthPool;
+
+rule: "[main.ostw] melee allows healthpack pickup at full HP"
+Event.OngoingPlayer
+if (DEBUG_MODE || WorkshopSettingToggle("1. Settings", "Melee Allows Healthpack Pickup", true, 0))
+if (EventPlayer().IsButtonHeld(Button.Melee))
+{
+  AbortIf(Health() != MaxHealth());
+  Number tempHealth = Health(EventPlayer());
+  TempHealthPool = AddHealthPoolToPlayer(
+    EventPlayer(), HealthType.Health, 1, true, false
+  );
+  // Damage(EventPlayer(), null, 1);
+  SetPlayerHealth(EventPlayer(), tempHealth);
+  MinWait();
+  RemoveHealthPoolFromPlayer(TempHealthPool);
+}
+
+rule: "[main.ostw] DEBUG: When say goodbye, die"
 Event.OngoingPlayer
 if (DEBUG_MODE)
-if (IsMeleeing())
+if (IsCommunicating(EventPlayer(), Communication.Goodbye))
 {
-  Damage(EventPlayer(), null, 50);
+  Wait(1.5);
+  Kill(EventPlayer(), null);
 }
 
 rule: "[main.ostw] When a player dies, issue a DROP event"
@@ -70,9 +92,6 @@ if (EventPlayer().IsButtonHeld(Button.Interact))
   //     case PlayerPowerupState.READY:
   //       powerupEvent = PlayerPowerupEvent.ACTIVATE;
   //       break;
-  //     case PlayerPowerupState.USING:
-  //       powerupEvent = PlayerPowerupEvent.DEACTIVATE;
-  //       break;
   //     default:
   //       rolledPowerupIndex = DEBUG_POWERUP_INDEX;
   //       powerupEvent = PlayerPowerupEvent.PICKUP;
@@ -91,4 +110,31 @@ if (EventPlayer().IsButtonHeld(Button.Interact))
       powerupEvent = PlayerPowerupEvent.ACTIVATE;
   }
   DispatchPowerupEvent();
+}
+
+rule: "[main.ostw] Drop powerup when switch heroes"
+Event.OngoingPlayer
+if (HasSpawned())
+{
+  WaitUntil(HeroOf() != EvaluateOnce(HeroOf()), 1000000);
+  powerupEvent = PlayerPowerupEvent.DROP;
+  DispatchPowerupEvent();
+  LoopIfConditionIsTrue();
+}
+
+rule: "[main.ostw] Drop powerup between rounds"
+Event.OngoingPlayer
+if (IsBetweenRounds())
+{
+  powerupEvent = PlayerPowerupEvent.DROP;
+  DispatchPowerupEvent();
+}
+
+rule: "[main.ostw] Skip assembling heroes and setup when in DEBUG"
+if (DEBUG_MODE)
+if (IsAssemblingHeroes())
+{
+  SetMatchTime(1);
+  WaitUntil(IsInSetup(), 3);
+  if (IsInSetup()) SetMatchTime(0);
 }

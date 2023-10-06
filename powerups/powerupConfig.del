@@ -1,3 +1,10 @@
+import "infiniteAmmo.ostw";
+import "blind.ostw";
+import "bulletBob.ostw";
+import "aimbot.ostw";
+import "runItBack.ostw";
+import "fasterCooldowns.ostw";
+
 enum PowerupType {
   SPEED = "Speed Boost",
   INVISIBILITY = "Invisibility",
@@ -9,7 +16,7 @@ enum PowerupType {
   AIMBOT = "Aimbot",
   RUN_IT_BACK = "Run It Back",
   FASTER_COOLDOWNS = "Faster Cooldowns",
-  DEADEYE = "One Shot, One Opportunity"
+  DEADEYE = "Bullet Bob"
 }
 
 single struct Powerup {
@@ -44,7 +51,7 @@ globalvar Powerup[] possiblePowerups = [
     color_R: 160,
     color_G: 232,
     color_B: 27,
-    duration: 20,
+    duration: WorkshopSettingInteger("Speed", "Speed Powerup Duration", 20, 1, 60, -1),
     OnPowerupActivation: (player) => {
       powerupEffects[0] = CreateEffect(
         VisibleTo:    AllPlayers(),
@@ -54,7 +61,7 @@ globalvar Powerup[] possiblePowerups = [
         Radius:       1,
         Reevaluation: EffectRev.VisibleTo
       );
-      player.SetMoveSpeed(150);
+      player.SetMoveSpeed(WorkshopSettingInteger("Speed", "Speed Powerup Move Speed %", 150, 100, 500, 0));
     },
     OnPowerupDeactivation: (player) => {
       player.SetMoveSpeed(100);
@@ -66,7 +73,7 @@ globalvar Powerup[] possiblePowerups = [
     color_R: 161,
     color_G: 73,
     color_B: 197,
-    duration: 10,
+    duration: WorkshopSettingInteger("Invisibility", "Invisibility Powerup Duration", 10, 1, 60, -1),
     OnPowerupActivation: (player) => {
       # Self effect
       powerupEffects[0] = CreateEffect(
@@ -80,57 +87,50 @@ globalvar Powerup[] possiblePowerups = [
       // # Because SOMETHING in the netcode isn't letting some fields get populated with the right values
       // MinWait();
       # Teammate effects
-      powerupEffects[1] = CreateEffect(
-        VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
-        Type:         Effect.Sphere,
-        Color:        <Color>TeamOf(EvaluateOnce(player)),
-        Position:     UpdateEveryFrame(EyePosition(EvaluateOnce(player))),
-        Radius:       0.5,
-        Reevaluation: EffectRev.VisibleToPositionAndRadius
-      );
-      powerupEffects[2] = CreateEffect(
-        VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
-        Type:         Effect.Sphere,
-        Color:        Color.White,
-        Position:     UpdateEveryFrame(EyePosition(EvaluateOnce(player))),
-        Radius:       0.45,
-        Reevaluation: EffectRev.VisibleToPositionAndRadius
-      );
-      // powerupEffects[2] = CreateProjectileEffect(
-      //   VisibleTo:       AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
-      //   ProjectileType:  ProjectileType.MercyCaduceusBlaster,
-      //   FriendlyTo:      AllPlayers(TeamOf(EvaluateOnce(player))),
-      //   Position:        UpdateEveryFrame(EyePosition(EvaluateOnce(player)) + FacingDirectionOf(EvaluateOnce(player)) * 0.5),
-      //   Direction:       UpdateEveryFrame(FacingDirectionOf(EvaluateOnce(player))),
-      //   Oversize:        0.04,
-      //   Reevaluation:    ProjectileEffectReeval.VisibleToPositionDirectionAndSize
-      // );
-      powerupEffects[3] = CreateEffect(
-        VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
-        Type:         Effect.Sphere,
-        Color:        Color.Black,
-        Position:     UpdateEveryFrame(EyePosition(EvaluateOnce(player)) + FacingDirectionOf(EvaluateOnce(player)) * 0.5),
-        Radius:       0.15,
-        Reevaluation: EffectRev.VisibleToPositionAndRadius
-      );
-      powerupEffects[4] = CreateEffect(
-        VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
-        Type:         Effect.Sphere,
-        Color:        Color.Black,
-        Position:     UpdateEveryFrame(EyePosition(EvaluateOnce(player)) + FacingDirectionOf(EvaluateOnce(player)) * 0.5),
-        Radius:       0.15,
-        Reevaluation: EffectRev.VisibleToPositionAndRadius
-      );
-      powerupIWTs[0] = CreateInWorldText(
-        VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
-        Header:       <"<0> <1>", HeroIconString(HeroOf(EvaluateOnce(player))), EvaluateOnce(player)>,
-        Position:     UpdateEveryFrame(PositionOf(EvaluateOnce(player)) + Up() * 2),
-        Scale:        1.5,
-        Clipping:     Clipping.ClipAgainstSurfaces,
-        Reevaluation: InworldTextRev.VisibleToAndPosition,
-        TextColor:    <Color>TeamOf(player),
-        Spectators:   Spectators.VisibleAlways
-      );
+      if (WorkshopSettingToggle("Invisibility", "Mark Invisible Player to Teammates", true, 0)) {
+        powerupEffects[1] = CreateEffect(
+          VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
+          Type:         Effect.Sphere,
+          Color:        <Color>TeamOf(EvaluateOnce(player)),
+          Position:     UpdateEveryFrame(EyePosition(EvaluateOnce(player))),
+          Radius:       0.5,
+          Reevaluation: EffectRev.VisibleToPositionAndRadius
+        );
+        powerupEffects[2] = CreateEffect(
+          VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
+          Type:         Effect.Sphere,
+          Color:        Color.White,
+          Position:     UpdateEveryFrame(EyePosition(EvaluateOnce(player))),
+          Radius:       0.45,
+          Reevaluation: EffectRev.VisibleToPositionAndRadius
+        );
+        powerupEffects[3] = CreateEffect(
+          VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
+          Type:         Effect.Sphere,
+          Color:        Color.Black,
+          Position:     UpdateEveryFrame(EyePosition(EvaluateOnce(player)) + FacingDirectionOf(EvaluateOnce(player)) * 0.5),
+          Radius:       0.15,
+          Reevaluation: EffectRev.VisibleToPositionAndRadius
+        );
+        powerupEffects[4] = CreateEffect(
+          VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
+          Type:         Effect.Sphere,
+          Color:        Color.Black,
+          Position:     UpdateEveryFrame(EyePosition(EvaluateOnce(player)) + FacingDirectionOf(EvaluateOnce(player)) * 0.5),
+          Radius:       0.15,
+          Reevaluation: EffectRev.VisibleToPositionAndRadius
+        );
+        powerupIWTs[0] = CreateInWorldText(
+          VisibleTo:    AllPlayers(TeamOf(EvaluateOnce(player))).Remove(EvaluateOnce(player)),
+          Header:       <"<0> <1>", HeroIconString(HeroOf(EvaluateOnce(player))), EvaluateOnce(player)>,
+          Position:     UpdateEveryFrame(PositionOf(EvaluateOnce(player)) + Up() * 2),
+          Scale:        1.5,
+          Clipping:     Clipping.ClipAgainstSurfaces,
+          Reevaluation: InworldTextRev.VisibleToAndPosition,
+          TextColor:    <Color>TeamOf(player),
+          Spectators:   Spectators.VisibleAlways
+        );
+      }
       SetInvisible(player, InvisibleTo.Enemies);
     },
     OnPowerupDeactivation: (player) => {
@@ -143,7 +143,7 @@ globalvar Powerup[] possiblePowerups = [
     color_R: 255,
     color_G: 50,
     color_B: 145,
-    duration: 15,
+    duration: WorkshopSettingInteger("Tiny", "Tiny Powerup Duration", 15, 1, 60, -1),
     OnPowerupActivation: (player) => {
       powerupEffects[0] = CreateEffect(
         VisibleTo:    AllPlayers(),
@@ -162,11 +162,13 @@ globalvar Powerup[] possiblePowerups = [
         Reevaluation: EffectRev.VisibleTo
       );
       StartScalingPlayer(player, EvaluateOnce(player).playerScale, true);
-      ChaseVariableOverTime(player.playerScale, 0.05, 0.25, TimeChaseReevaluation.None);
+      StartModifyingHeroVoiceLines(EventPlayer(), 1.5, false);
+      ChaseVariableOverTime(player.playerScale, WorkshopSettingReal("Tiny", "Tiny Player Scale", 0.1, 0.01, 1), 0.25, TimeChaseReevaluation.None);
     },
     OnPowerupDeactivation: (player) => {
       ChaseVariableOverTime(player.playerScale, 1, 0.25, TimeChaseReevaluation.None);
       WaitUntil(player.playerScale == 1, 1);
+      StopModifyingHeroVoiceLines(EventPlayer());
       StopScalingPlayer(player);
     }
   },
@@ -176,7 +178,7 @@ globalvar Powerup[] possiblePowerups = [
     color_R: 238,
     color_G: 109,
     color_B: 14,
-    duration: 10,
+    duration: WorkshopSettingInteger("Giant", "Giant Powerup Duration", 20, 10, 60, -1),
     OnPowerupActivation: (player) => {
       powerupEffects[0] = CreateEffect(
         VisibleTo:    AllPlayers(),
@@ -194,9 +196,10 @@ globalvar Powerup[] possiblePowerups = [
         Radius:       50,
         Reevaluation: EffectRev.VisibleTo
       );
-      StartScalingPlayer(player, EvaluateOnce(player).playerScale, true);
-      ChaseVariableOverTime(player.playerScale, 2, 0.25, TimeChaseReevaluation.None);
-      SetMaxHealth(player, giantHealthScalar * 100);
+      StartScalingPlayer(player, playerScale, true);
+      StartModifyingHeroVoiceLines(EventPlayer(), 0.5, false);
+      ChaseVariableOverTime(playerScale, WorkshopSettingReal("Giant", "Giant Player Scale", 2, 1, 5), 0.25, TimeChaseReevaluation.None);
+      SetMaxHealth(player, WorkshopSettingReal("Giant", "Giant Player Health %", 300, 100, 500, 0));
       # Must wait a tick because sometimes the health max hasn't actually updated yet
       MinWait();
       SetPlayerHealth(player, MaxHealth(player));
@@ -205,6 +208,7 @@ globalvar Powerup[] possiblePowerups = [
       SetMaxHealth(player, 100);
       ChaseVariableOverTime(player.playerScale, 1, 0.25, TimeChaseReevaluation.None);
       WaitUntil(player.playerScale == 1, 1);
+      StopModifyingHeroVoiceLines(EventPlayer());
       StopScalingPlayer(player);
     }
   },
@@ -213,7 +217,7 @@ globalvar Powerup[] possiblePowerups = [
     color_R: 238,
     color_B: 14,
     color_G: 14,
-    duration: 5,
+    duration: WorkshopSettingInteger("Quad Damage", "Quad Damage Powerup Duration", 5, 1, 60, -1),
     icon: IconString(Icon.Skull),
     OnPowerupActivation: (player) => {
       powerupEffects[0] = CreateEffect(
@@ -226,7 +230,7 @@ globalvar Powerup[] possiblePowerups = [
       );
       powerupEffects[1] = CreateEffect(
         AllPlayers(),
-        Effect.MercyDamageBoostedSound,
+        Effect.AnaNanoBoostedSound,
         Color: <Color>TeamOf(player),
         Position: player,
         Radius: 100,
@@ -243,7 +247,7 @@ globalvar Powerup[] possiblePowerups = [
     color_R: 246,
     color_G: 157,
     color_B: 38,
-    duration: 30,
+    duration: WorkshopSettingInteger("Infinite Ammo", "Infinite Ammo Powerup Duration", 30, 1, 60, -1),
     icon: AbilityIconString(Hero.Pharah, Button.Ultimate),
     OnPowerupActivation: (player) => {
       powerupEffects[0] = CreateEffect(
@@ -262,12 +266,135 @@ globalvar Powerup[] possiblePowerups = [
         Radius: 100,
         Reevaluation: EffectRev.VisibleTo
       );
-      SetAmmo(player, 0, 9999);
-      SetAmmo(player, 1, 9999);
+      SetAmmo(EventPlayer(), 0, 9999);
+      SetAmmo(EventPlayer(), 1, 9999);
     },
     OnPowerupDeactivation: (player) => {
       SetAmmo(player, 0, Min(Ammo(player, 0), MaxAmmo(player, 0)));
       SetAmmo(player, 1, Min(Ammo(player, 1), MaxAmmo(player, 1)));
+    }
+  },
+  {
+    name: PowerupType.BLIND,
+    color_R: 100,
+    color_G: 50,
+    color_B: 200,
+    duration: WorkshopSettingInteger("Blindness", "Blindness Powerup Duration", 4, 1, 60, -1),
+    icon: IconString(Icon.Eye),
+    OnPowerupActivation: (player) => {
+      AllPlayers(OppositeTeamOf(TeamOf(player))).blinders.ModAppend(player);
+    },
+    OnPowerupDeactivation: (player) => {
+      AllPlayers(OppositeTeamOf(TeamOf(player))).blinders.ModRemoveByValue(player);
+    }
+  },
+  {
+    name: PowerupType.AIMBOT,
+    color_R: 242,
+    color_G: 40,
+    color_B: 87,
+    duration: WorkshopSettingInteger("Aimbot", "Aimbot Powerup Duration", 10, 1, 60, -1),
+    icon: AbilityIconString(Hero.Soldier76, Button.Ultimate),
+    OnPowerupActivation: (player) => {
+      powerupEffects[0] = CreateEffect(
+        AllPlayers(),
+        Effect.Sparkles,
+        <Color>TeamOf(),
+        UpdateEveryFrame(PositionOf() + Up()),
+        1.5,
+        EffectRev.VisibleToPositionAndRadius
+      );
+      powerupEffects[1] = CreateEffect(
+        AllPlayers(),
+        Effect.EnergySound,
+        <Color>TeamOf(),
+        UpdateEveryFrame(PositionOf()),
+        100,
+        EffectRev.VisibleToPositionAndRadius
+      );
+      player.aimbotEnabled = true;
+    },
+    OnPowerupDeactivation: (player) => {
+      player.aimbotEnabled = false;
+    }
+  },
+  {
+    name: PowerupType.RUN_IT_BACK,
+    color_R: 251,
+    color_G: 131,
+    color_B: 118,
+    duration: WorkshopSettingInteger("Run It Back", "Run It Back Duration", 10, 1, 60, -1),
+    icon: AbilityIconString(Hero.Mercy, Button.Ability2),
+    OnPowerupActivation: (p) => {
+      runItBackAnchor = { position: PositionOf(), facing: FacingDirectionOf() };
+
+      powerupEffects[0] = CreateEffect(
+        AllPlayers(), Effect.BaptisteImmortalityFieldProtectedEffect,
+        <Color>TeamOf(), EventPlayer(), 1, EffectRev.VisibleTo
+      );
+      powerupEffects[1] = CreateEffect(
+        AllPlayers(), Effect.BaptisteImmortalityFieldProtectedSound,
+        <Color>TeamOf(), EventPlayer(), 80, EffectRev.VisibleTo
+      );
+      powerupEffects[2] = CreateProjectileEffect(
+        AllPlayers(), ProjectileType.ZaryaParticleCannon, AllPlayers(TeamOf()),
+        runItBackAnchor.position, Up(), 0, ProjectileEffectReeval.VisibleToFriendlyTo
+      );
+    },
+    OnPowerupDeactivation: (p) => {
+      if (runItBackAnchor != null) async RunItBack();
+    }
+  },
+  {
+    name: PowerupType.FASTER_COOLDOWNS,
+    color_R: 0,
+    color_G: 166,
+    color_B: 166,
+    duration: WorkshopSettingInteger("Faster Cooldowns", "Faster Cooldown Powerup Duration", 20, 1, 60, -1),
+    icon: AbilityIconString(Hero.Torbjorn, Button.Ability2),
+    OnPowerupActivation: (player) => {
+      powerupEffects[0] = CreateEffect(
+        VisibleTo:                AllPlayers(),
+        Type:                     Effect.SombraHackingSound,
+        Color:                    null,
+        Position:                 EventPlayer(),
+        Radius:                   170,
+        Reevaluation:             EffectRev.VisibleTo
+      );
+    },
+    OnPowerupDeactivation: (player) => {
+      return;
+    }
+  },
+  {
+    name: PowerupType.DEADEYE,
+    color_R: 153,
+    color_G: 178,
+    color_B: 221,
+    duration: WorkshopSettingInteger("Bullet Bob", "Bullet Bob Powerup Duration", 12, 1, 60, -1),
+    icon: AbilityIconString(Hero.Cassidy, Button.Ultimate),
+    OnPowerupActivation: (player) => {
+      powerupEffects[0] = CreateEffect(
+        AllPlayers(),
+        Effect.BadAura,
+        <Color>TeamOf(),
+        UpdateEveryFrame(PositionOf() + Up()),
+        1,
+        EffectRev.VisibleToPositionAndRadius
+      );
+      powerupEffects[1] = CreateEffect(
+        AllPlayers(),
+        Effect.SigmaGraviticFluxTargetSound,
+        <Color>TeamOf(),
+        EventPlayer(),
+        200,
+        EffectRev.VisibleToPositionAndRadius
+      );
+      canFireBulletBob = true;
+    },
+    OnPowerupDeactivation: (player) => {
+      if (canFireBulletBob) FireBulletBob();
+      canFireBulletBob = false;
     }
   }
 ];

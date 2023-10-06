@@ -1,0 +1,139 @@
+import "powerupStruct.del";
+
+globalvar Number FasterCooldownSpeed = WorkshopSettingInteger("Faster Cooldowns", "Cooldown Regeneration Speed", 200, 100, 500, 0);
+Hero EffectiveHero(Player p = EventPlayer()): IsDuplicating(p) ? HeroBeingDuplicated(p) : HeroOf(p);
+Number COOLDOWN_UPDATE_PERIOD: 0.1;
+Number CooldownScalar: FasterCooldownSpeed / 100 - 1;
+
+playervar Number[] finalSegmentCache;
+
+// Jump, Reload, Interact, and Melee not included because no hero
+// currently has a cooldown ability associated with those buttons
+enum AbilityButtons {
+  PrimaryFire,
+  SecondaryFire,
+  Ability1,
+  Ability2,
+  Crouch
+}
+
+rule: "[powerups/fasterCooldowns.ostw] Speed up Primary Fire cooldown"
+Event.OngoingPlayer
+if (IsUsingPowerup(EventPlayer(), PowerupType.FASTER_COOLDOWNS))
+if (AbilityCooldown(Button: Button.PrimaryFire) > 0)
+{
+  if (Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.PrimaryFire)) < COOLDOWN_UPDATE_PERIOD) {
+    finalSegmentCache[AbilityButtons.PrimaryFire] = Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.PrimaryFire));
+    Wait(finalSegmentCache[AbilityButtons.PrimaryFire]);
+    SetAbilityCooldown(
+      Player:             EventPlayer(),
+      Button:             Button.PrimaryFire,
+      Cooldown:           AbilityCooldown(Button: Button.PrimaryFire) - finalSegmentCache[AbilityButtons.PrimaryFire] * CooldownScalar
+    );
+    return;
+  }
+  Wait(COOLDOWN_UPDATE_PERIOD);
+  SetAbilityCooldown(
+    Player:             EventPlayer(),
+    Button:             Button.PrimaryFire,
+    Cooldown:           AbilityCooldown(Button: Button.PrimaryFire) - COOLDOWN_UPDATE_PERIOD * CooldownScalar
+  );
+  LoopIfConditionIsTrue();
+}
+
+rule: "[powerups/fasterCooldowns.ostw] Speed up Secondary Fire cooldown"
+Event.OngoingPlayer
+if (IsUsingPowerup(EventPlayer(), PowerupType.FASTER_COOLDOWNS))
+if (AbilityCooldown(Button: Button.SecondaryFire) > 0)
+{
+  if (Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.SecondaryFire)) < COOLDOWN_UPDATE_PERIOD) {
+    finalSegmentCache[AbilityButtons.SecondaryFire] = Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.SecondaryFire));
+    Wait(finalSegmentCache[AbilityButtons.SecondaryFire]);
+    SetAbilityCooldown(
+      Player:             EventPlayer(),
+      Button:             Button.SecondaryFire,
+      Cooldown:           AbilityCooldown(Button: Button.SecondaryFire) - finalSegmentCache[AbilityButtons.SecondaryFire] * CooldownScalar
+    );
+    return;
+  }
+  Wait(COOLDOWN_UPDATE_PERIOD);
+  SetAbilityCooldown(
+    Player:             EventPlayer(),
+    Button:             Button.SecondaryFire,
+    Cooldown:           AbilityCooldown(Button: Button.SecondaryFire) - COOLDOWN_UPDATE_PERIOD * CooldownScalar
+  );
+  LoopIfConditionIsTrue();
+}
+
+rule: "[powerups/fasterCooldowns.ostw] Make Ability 1 cooldown faster"
+Event.OngoingPlayer
+if (IsUsingPowerup(EventPlayer(), PowerupType.FASTER_COOLDOWNS))
+if (AbilityCooldown(EventPlayer(), Button.Ability1) > 0)
+{
+  // if ([Hero.Roadhog, Hero.Ashe].Contains(EffectiveHero())) WaitUntil(!IsUsingAbility1(), AbilityCooldown(EventPlayer(), Button.Ability1));
+  if (Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.Ability1)) < COOLDOWN_UPDATE_PERIOD) {
+    finalSegmentCache[AbilityButtons.Ability1] = Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.Ability1));
+    Wait(finalSegmentCache[AbilityButtons.Ability1]);
+    SetAbilityCooldown(
+      Player:             EventPlayer(),
+      Button:             Button.Ability1,
+      Cooldown:           AbilityCooldown(Button: Button.Ability1) - finalSegmentCache[AbilityButtons.Ability1] * CooldownScalar
+    );
+    return;
+  }
+  Wait(COOLDOWN_UPDATE_PERIOD);
+  SetAbilityCooldown(
+    Player:             EventPlayer(),
+    Button:             Button.Ability1,
+    Cooldown:           AbilityCooldown(Button: Button.Ability1) - COOLDOWN_UPDATE_PERIOD * CooldownScalar
+  );
+  LoopIfConditionIsTrue();
+}
+
+rule: "[powerups/fasterCooldowns.ostw] Speed up Ability 2 cooldown"
+Event.OngoingPlayer
+if (IsUsingPowerup(EventPlayer(), PowerupType.FASTER_COOLDOWNS))
+if (AbilityCooldown(Button: Button.Ability2) > 0)
+{
+  if (Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.Ability2)) < COOLDOWN_UPDATE_PERIOD) {
+    finalSegmentCache[AbilityButtons.Ability2] = Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.Ability2));
+    Wait(finalSegmentCache[AbilityButtons.Ability2]);
+    SetAbilityCooldown(
+      Player:             EventPlayer(),
+      Button:             Button.Ability2,
+      Cooldown:           AbilityCooldown(Button: Button.Ability2) - finalSegmentCache[AbilityButtons.Ability2] * CooldownScalar
+    );
+    return;
+  }
+  Wait(COOLDOWN_UPDATE_PERIOD);
+  SetAbilityCooldown(
+    Player:             EventPlayer(),
+    Button:             Button.Ability2,
+    Cooldown:           AbilityCooldown(Button: Button.Ability2) - COOLDOWN_UPDATE_PERIOD * CooldownScalar
+  );
+  LoopIfConditionIsTrue();
+}
+
+rule: "[powerups/fasterCooldowns.ostw] Speed up Crouch cooldown"
+Event.OngoingPlayer
+if (IsUsingPowerup(EventPlayer(), PowerupType.FASTER_COOLDOWNS))
+if (AbilityCooldown(Button: Button.Crouch) > 0)
+{
+  if (Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.Crouch)) < COOLDOWN_UPDATE_PERIOD) {
+    finalSegmentCache[AbilityButtons.Crouch] = Min(PowerupTimeRemaining(EventPlayer()), AbilityCooldown(Button: Button.Crouch));
+    Wait(finalSegmentCache[AbilityButtons.Crouch]);
+    SetAbilityCooldown(
+      Player:             EventPlayer(),
+      Button:             Button.Crouch,
+      Cooldown:           AbilityCooldown(Button: Button.Crouch) - finalSegmentCache[AbilityButtons.Crouch] * CooldownScalar
+    );
+    return;
+  }
+  Wait(COOLDOWN_UPDATE_PERIOD);
+  SetAbilityCooldown(
+    Player:             EventPlayer(),
+    Button:             Button.Crouch,
+    Cooldown:           AbilityCooldown(Button: Button.Crouch) - COOLDOWN_UPDATE_PERIOD * CooldownScalar
+  );
+  LoopIfConditionIsTrue();
+}

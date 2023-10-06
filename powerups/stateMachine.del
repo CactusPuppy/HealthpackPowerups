@@ -1,6 +1,8 @@
 import "powerupStruct.del";
 import "wheelVisuals.del";
 
+globalvar Boolean PlayersCanJamWheel = WorkshopSettingToggle("1. Settings", "Can Stop Spinner/Wheel Early", true);
+
 enum PlayerPowerupState {
   NONE = "NONE",
   ACQUIRING = "ACQUIRING",
@@ -25,6 +27,8 @@ playervar Number rolledPowerupIndex = -1;
 
 void DispatchPowerupEvent() playervar "[powerups/stateMachine.del] Handle powerup event"
 {
+  if (powerupEvent == PlayerPowerupEvent.JAM_WHEEL && !PlayersCanJamWheel) powerupEvent = PlayerPowerupEvent.NONE;
+
   switch (powerupState) {
     case PlayerPowerupState.NONE:
       Handle_PPS_NONE();
@@ -77,6 +81,9 @@ void Handle_PPS_ACQUIRING() playervar "[powerups/stateMachine.del] Handle poweru
       wheelEvent = WheelEvent.MANUAL_STOP_SPIN;
       DispatchWheelEvent();
     case PlayerPowerupEvent.ROLL_FINISH:
+      // # DON'T grant a powerup on roll finish if dead
+      // if (IsDead()) break;
+
       RemoveAuxiliaryWheelVisuals();
       AddUseButtonPrompt();
       rolledPowerupIndex = currentWheelIndex;
@@ -133,7 +140,7 @@ void Handle_PPS_READY() playervar "[powerups/stateMachine.del] Handle powerup ev
       # Activate the powerup
       activePowerup.OnPowerupActivation(EventPlayer());
 
-      SmallMessage(AllPlayers(), <" <0>  <1> activated <2>", activePowerup.icon, EventPlayer(), activePowerup.name>);
+      SmallMessage(AllPlayers(), <"  <0>  <3> <1> activated <2>", activePowerup.icon, EventPlayer(), activePowerup.name, HeroIconString(HeroOf(EventPlayer()))>);
 
       powerupState = PlayerPowerupState.USING;
       break;
@@ -166,9 +173,12 @@ void Handle_PPS_USING() playervar "[powerups/stateMachine.del] Handle powerup ev
       DispatchWheelEvent();
       break;
     case PlayerPowerupEvent.JAM_WHEEL:
+      if (!IsWheelSpinning()) break;
       wheelEvent = WheelEvent.MANUAL_STOP_SPIN;
       DispatchWheelEvent();
     case PlayerPowerupEvent.ROLL_FINISH:
+      // # DON'T grant a powerup on roll finish if dead
+      // if (IsDead()) break;
       rolledPowerupIndex = currentWheelIndex;
       RemoveAuxiliaryWheelVisuals();
       break;

@@ -1,0 +1,25 @@
+playervar Boolean aimbotEnabled!;
+
+Boolean IsFiringWeapon(Player p = EventPlayer()): IsButtonHeld(p, Button.PrimaryFire) || IsButtonHeld(p, Button.SecondaryFire);
+
+rule: "[powerups/aimbot.ostw] If the player has aimbot and is firing primary OR secondary, start facing the nearest enemy in facing angle"
+Event.OngoingPlayer
+if (aimbotEnabled)
+if (IsFiringWeapon())
+if (PlayersInViewAngle(EventPlayer(), OppositeTeamOf(TeamOf()), 20).FilteredArray((p) => p.IsAlive() && IsInLineOfSight(EyePosition(), EyePosition(p))).Length > 0)
+{
+  StartFacing(EventPlayer(),
+    UpdateEveryFrame(DirectionTowards(
+      EyePosition(),
+      EyePosition(PlayersInViewAngle(EventPlayer(), OppositeTeamOf(TeamOf()), 20)
+        .FilteredArray((p) => p.IsAlive() && IsInLineOfSight(EyePosition(), EyePosition(p)))
+        .SortedArray((p) => AngleBetweenVectors(EyePosition(p) - EyePosition(), FacingDirectionOf()))
+        .First))),
+    1000, Relative.ToWorld, FacingRev.DirectionAndTurnRate);
+  WaitUntil(!IsFiringWeapon()
+    || PlayersInViewAngle(EventPlayer(), OppositeTeamOf(TeamOf()), 20)
+      .FilteredArray((p) => p.IsAlive() && IsInLineOfSight(EyePosition(), EyePosition(p))).Length == 0
+    || !aimbotEnabled
+  , 1000000);
+  StopFacing(EventPlayer());
+}

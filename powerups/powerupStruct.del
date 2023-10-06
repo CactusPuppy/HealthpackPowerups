@@ -12,8 +12,5 @@ Number flashMinOpacity: 32;
 Number flashWeight(Player p = EventPlayer()): Min(1, Max(0, (p.powerupPercentLeft - flashStart) / (flashEnd - flashStart)));
 Number flashFactor(Player p = EventPlayer()): SineFromRadians(SquareRoot(18 * p.activePowerup.duration * p.powerupPercentLeft)) / 2 + 0.5;
 
-void RollRandomPowerup() playervar "[powerupStruct.del] Roll for a powerup from the list"
-{
-  powerupEvent = PlayerPowerupEvent.PICKUP;
-  DispatchPowerupEvent();
-}
+Boolean IsUsingPowerup(Player p, PowerupType powerup): powerupState == PlayerPowerupState.USING && p.activePowerup.name == powerup;
+Number PowerupTimeRemaining(Player p): p.activePowerup != null ? p.powerupPercentLeft / 100 * p.activePowerup.duration : 0;

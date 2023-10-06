@@ -1,0 +1,19 @@
+import "powerupStruct.del";
+
+rule: "If player is using Infinite Ammo, and their clip 0 ammo count drops below max ammo, refill clip 0 to 1000"
+Event.OngoingPlayer
+if (IsUsingPowerup(EventPlayer(), PowerupType.INFINITE_AMMO))
+if (MaxAmmo(EventPlayer(), 0) > 0)
+if (Ammo(EventPlayer(), 0) < MaxAmmo(EventPlayer(), 0))
+{
+  SetAmmo(EventPlayer(), 0, 1000);
+}
+
+rule: "If player is using Infinite Ammo, and their clip 1 ammo count drops below max ammo, refill clip 1 to 1000"
+Event.OngoingPlayer
+if (IsUsingPowerup(EventPlayer(), PowerupType.INFINITE_AMMO))
+if (MaxAmmo(EventPlayer(), 1) > 0)
+if (Ammo(EventPlayer(), 1) < MaxAmmo(EventPlayer(), 1))
+{
+  SetAmmo(EventPlayer(), 1, 1000);
+}

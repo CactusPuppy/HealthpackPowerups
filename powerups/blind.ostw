@@ -1,0 +1,83 @@
+playervar Player[] blinders = [];
+playervar Any blind3rdPersonEffect;
+
+globalvar Boolean blindnessDisablesHUD = WorkshopSettingToggle("Blindness", "Blindness Disables HUD", true, 0);
+
+rule: "[powerups/blind.ostw] Create one universal blind orb"
+{
+  CreateEffect(
+    VisibleTo: AllPlayers().FilteredArray((p) => p.blinders.Length > 0),
+    Type: Effect.Orb,
+    Color: Color.Black,
+    Position: Vector(0,1000,-0.27),
+    Radius: 1,
+    Reevaluation: EffectRev.VisibleTo
+  );
+  CreateEffect(
+    VisibleTo: AllPlayers().FilteredArray((p) => p.blinders.Length > 0),
+    Type: Effect.Orb,
+    Color: Color.Black,
+    Position: Vector(0.05,1000,-0.27),
+    Radius: 1,
+    Reevaluation: EffectRev.VisibleTo
+  );
+  CreateEffect(
+    VisibleTo: AllPlayers().FilteredArray((p) => p.blinders.Length > 0),
+    Type: Effect.Orb,
+    Color: Color.Black,
+    Position: Vector(-0.05,1000,-0.27),
+    Radius: 1,
+    Reevaluation: EffectRev.VisibleTo
+  );
+}
+
+rule: "[powerups/blind.ostw] When a player is blind, put an orb in front of them and remove it when they are no longer blind"
+Event.OngoingPlayer
+if (blinders.Length > 0)
+{
+  StartCamera(EventPlayer(), Vector(0,1000,0), Vector(0,1000,1), 0);
+  if (blindnessDisablesHUD) {
+    DisableScoreboard();
+    DisableGameModeInworldUI();
+    DisableGameModeHud();
+    DisableHeroHud();
+    DisableKillFeed();
+    DisableMessages();
+  }
+  blind3rdPersonEffect = CreateEffect(
+    AllPlayers(),
+    Effect.Orb,
+    Color.Black,
+    UpdateEveryFrame(EyePosition()),
+    1,
+    EffectRev.VisibleToPositionAndRadius
+  );
+
+  WaitUntil(blinders.Length == 0, 1000000);
+
+  DestroyEffect(blind3rdPersonEffect);
+  if (blindnessDisablesHUD) {
+    EnableScoreboard();
+    EnableGameModeInworldUI();
+    EnableGameModeHud();
+    EnableHeroHud();
+    EnableKillFeed();
+    EnableMessages();
+  }
+  StopCamera();
+}
+
+rule: "[powerups/blind.ostw] When a player dies, clear their blinders"
+Event.OnDeath
+{
+  blinders = [];
+}
+
+rule: "[powerups/blind.ostw] Every 3 seconds, if a player has blinders, remove any players who no longer exist"
+Event.OngoingPlayer
+if (blinders.Length > 0)
+{
+  blinders = blinders.FilteredArray((p) => EntityExists(p));
+  Wait(3, WaitBehavior.AbortWhenFalse);
+  LoopIfConditionIsTrue();
+}
