@@ -9,25 +9,29 @@ rule: "[powerups/blind.ostw] Create one universal blind orb"
     VisibleTo: AllPlayers().FilteredArray((p) => p.blinders.Length > 0),
     Type: Effect.Orb,
     Color: Color.Black,
-    Position: Vector(0,1000,-0.27),
+    Position: UpdateEveryFrame(LocalPlayer().EyePosition()) + 0.9 * UpdateEveryFrame(FacingDirectionOf(LocalPlayer())),
     Radius: 1,
-    Reevaluation: EffectRev.VisibleTo
+    Reevaluation: EffectRev.VisibleToPositionAndRadius
   );
   CreateEffect(
     VisibleTo: AllPlayers().FilteredArray((p) => p.blinders.Length > 0),
     Type: Effect.Orb,
     Color: Color.Black,
-    Position: Vector(0.05,1000,-0.27),
+    Position: UpdateEveryFrame(LocalPlayer().EyePosition())
+      + 0.9 * UpdateEveryFrame(FacingDirectionOf(LocalPlayer()))
+      + 0.3 * UpdateEveryFrame(WorldVectorOf(Left(), LocalPlayer(), LocalVector.Rotation)),
     Radius: 1,
-    Reevaluation: EffectRev.VisibleTo
+    Reevaluation: EffectRev.VisibleToPositionAndRadius
   );
   CreateEffect(
     VisibleTo: AllPlayers().FilteredArray((p) => p.blinders.Length > 0),
     Type: Effect.Orb,
     Color: Color.Black,
-    Position: Vector(-0.05,1000,-0.27),
+    Position: UpdateEveryFrame(LocalPlayer().EyePosition())
+      + 0.9 * UpdateEveryFrame(FacingDirectionOf(LocalPlayer()))
+      + 0.3 * UpdateEveryFrame(WorldVectorOf(Right(), LocalPlayer(), LocalVector.Rotation)),
     Radius: 1,
-    Reevaluation: EffectRev.VisibleTo
+    Reevaluation: EffectRev.VisibleToPositionAndRadius
   );
 }
 
@@ -35,7 +39,7 @@ rule: "[powerups/blind.ostw] When a player is blind, put an orb in front of them
 Event.OngoingPlayer
 if (blinders.Length > 0)
 {
-  StartCamera(EventPlayer(), Vector(0,1000,0), Vector(0,1000,1), 0);
+  // StartCamera(EventPlayer(), EventPlayer().EyePosition(), EventPlayer().EyePosition() + EventPlayer().FacingDirection(), 0);
   if (blindnessDisablesHUD) {
     DisableScoreboard();
     DisableGameModeInworldUI();
@@ -52,6 +56,7 @@ if (blinders.Length > 0)
     1,
     EffectRev.VisibleToPositionAndRadius
   );
+  StartForcingPlayerOutlines(AllPlayers(OppositeTeamOf(TeamOf())), EventPlayer(), false, Color.Black, OutlineType.Default);
 
   WaitUntil(blinders.Length == 0, 1000000);
 
@@ -64,7 +69,8 @@ if (blinders.Length > 0)
     EnableKillFeed();
     EnableMessages();
   }
-  StopCamera();
+  // StopCamera();
+  StopForcingPlayerOutlines(AllPlayers(OppositeTeamOf(TeamOf())), EventPlayer());
 }
 
 rule: "[powerups/blind.ostw] When a player dies, clear their blinders"
