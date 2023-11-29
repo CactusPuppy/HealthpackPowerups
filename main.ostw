@@ -84,23 +84,6 @@ rule: "[main.ostw] Handle Interact press"
 Event.OngoingPlayer
 if (EventPlayer().IsButtonHeld(Button.Interact))
 {
-  // if (DEBUG_MODE) {
-  //   switch (powerupState) {
-  //     case PlayerPowerupState.ACQUIRING:
-  //     case PlayerPowerupState.USING:
-  //       powerupEvent = PlayerPowerupEvent.JAM_WHEEL;
-  //       break;
-  //     case PlayerPowerupState.READY:
-  //       powerupEvent = PlayerPowerupEvent.ACTIVATE;
-  //       break;
-  //     default:
-  //       rolledPowerupIndex = DEBUG_POWERUP_INDEX;
-  //       powerupEvent = PlayerPowerupEvent.PICKUP;
-  //   }
-  //   DispatchPowerupEvent();
-  //   return;
-  // }
-
   switch (powerupState) {
     case PlayerPowerupState.ACQUIRING:
     case PlayerPowerupState.USING:
