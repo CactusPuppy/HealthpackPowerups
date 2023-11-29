@@ -217,7 +217,7 @@ globalvar Powerup[] possiblePowerups = [
     color_R: 238,
     color_B: 14,
     color_G: 14,
-    duration: WorkshopSettingInteger("Quad Damage", "Quad Damage Powerup Duration", 5, 1, 60, -1),
+    duration: WorkshopSettingInteger("Damage Boost", "Damage Boost Powerup Duration", 5, 1, 60, -1),
     icon: IconString(Icon.Skull),
     OnPowerupActivation: (player) => {
       powerupEffects[0] = CreateEffect(
@@ -236,7 +236,7 @@ globalvar Powerup[] possiblePowerups = [
         Radius: 100,
         Reevaluation: EffectRev.VisibleTo
       );
-      SetDamageDealt(player, 400);
+      SetDamageDealt(player, WorkshopSettingReal("Damage Boost", "Damage Boost %", 400, 100, 1000, 0));
     },
     OnPowerupDeactivation: (player) => {
       SetDamageDealt(player, 100);
