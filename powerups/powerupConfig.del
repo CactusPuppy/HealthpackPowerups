@@ -143,7 +143,7 @@ globalvar Powerup[] possiblePowerups = [
     color_R: 255,
     color_G: 50,
     color_B: 145,
-    duration: WorkshopSettingInteger("Tiny", "Tiny Powerup Duration", 15, 1, 60, -1),
+    duration: WorkshopSettingInteger("Tiny", "Tiny Powerup Duration", 10, 1, 60, -1),
     OnPowerupActivation: (player) => {
       powerupEffects[0] = CreateEffect(
         VisibleTo:    AllPlayers(),
@@ -163,7 +163,7 @@ globalvar Powerup[] possiblePowerups = [
       );
       StartScalingPlayer(player, EvaluateOnce(player).playerScale, true);
       StartModifyingHeroVoiceLines(EventPlayer(), 1.5, false);
-      ChaseVariableOverTime(player.playerScale, WorkshopSettingReal("Tiny", "Tiny Player Scale", 0.1, 0.01, 1), 0.25, TimeChaseReevaluation.None);
+      ChaseVariableOverTime(player.playerScale, WorkshopSettingReal("Tiny", "Tiny Player Scale", 0.33, 0.01, 1), 0.25, TimeChaseReevaluation.None);
     },
     OnPowerupDeactivation: (player) => {
       ChaseVariableOverTime(player.playerScale, 1, 0.25, TimeChaseReevaluation.None);
@@ -198,7 +198,7 @@ globalvar Powerup[] possiblePowerups = [
       );
       StartScalingPlayer(player, playerScale, true);
       StartModifyingHeroVoiceLines(EventPlayer(), 0.5, false);
-      ChaseVariableOverTime(playerScale, WorkshopSettingReal("Giant", "Giant Player Scale", 2, 1, 5), 0.25, TimeChaseReevaluation.None);
+      ChaseVariableOverTime(playerScale, WorkshopSettingReal("Giant", "Giant Player Scale", 1.5, 1, 5), 0.25, TimeChaseReevaluation.None);
       SetMaxHealth(player, WorkshopSettingReal("Giant", "Giant Player Health %", 300, 100, 500, 0));
       # Must wait a tick because sometimes the health max hasn't actually updated yet
       MinWait();
