@@ -23,7 +23,11 @@ if (runItBackAnchor != null)
 
 void RunItBack() playervar "[powerups/runItBack.ostw] Trigger the return to the anchor"
 {
+  Vector oldPosition = PositionOf(EventPlayer());
+  PlayEffect(AllPlayers(), PlayEffect.BadExplosion, <Color>TeamOf(), oldPosition, 1);
+  PlayEffect(AllPlayers(), PlayEffect.ExplosionSound, <Color>TeamOf(), oldPosition, 1);
   Teleport(EventPlayer(), runItBackAnchor.position);
+  PlayEffect(AllPlayers(), PlayEffect.GoodExplosion, <Color>TeamOf(), oldPosition, 1);
   # Wait for this to actually happen
   WaitUntil(DistanceBetween(runItBackAnchor.position, EventPlayer()) < 1, 0.25);
   Resurrect(EventPlayer());
