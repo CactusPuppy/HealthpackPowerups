@@ -11,10 +11,12 @@ if (PlayersInViewAngle(EventPlayer(), OppositeTeamOf(TeamOf()), 20).FilteredArra
   StartFacing(EventPlayer(),
     UpdateEveryFrame(DirectionTowards(
       EyePosition(),
-      EyePosition(PlayersInViewAngle(EventPlayer(), OppositeTeamOf(TeamOf()), 20)
-        .FilteredArray((p) => p.IsAlive() && IsInLineOfSight(EyePosition(), EyePosition(p)))
-        .SortedArray((p) => AngleBetweenVectors(EyePosition(p) - EyePosition(), FacingDirectionOf()))
-        .First))),
+      (PlayersInViewAngle(EventPlayer(), OppositeTeamOf(TeamOf()), 20).FilteredArray((p) => p.IsAlive() && IsInLineOfSight(EyePosition(), EyePosition(p))).Length > 0)
+        ? EyePosition(PlayersInViewAngle(EventPlayer(), OppositeTeamOf(TeamOf()), 20)
+          .FilteredArray((p) => p.IsAlive() && IsInLineOfSight(EyePosition(), EyePosition(p)))
+          .SortedArray((p) => AngleBetweenVectors(EyePosition(p) - EyePosition(), FacingDirectionOf()))
+          .First)
+        : EyePosition() + FacingDirectionOf())),
     1000, Relative.ToWorld, FacingRev.DirectionAndTurnRate);
   WaitUntil(!IsFiringWeapon()
     || PlayersInViewAngle(EventPlayer(), OppositeTeamOf(TeamOf()), 20)
