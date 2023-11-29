@@ -1,7 +1,7 @@
 playervar Player[] blinders = [];
 playervar Any blind3rdPersonEffect;
 
-globalvar Boolean blindnessDisablesHUD = WorkshopSettingToggle("Blindness", "Blindness Disables HUD", true, 0);
+globalvar Boolean blindnessDisablesHUD = WorkshopSettingToggle("Blindness", "Blindness Disables HUD", false, 0);
 
 rule: "[powerups/blind.ostw] Create one universal blind orb"
 {
