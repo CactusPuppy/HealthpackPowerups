@@ -39,6 +39,7 @@ rule: "[powerups/blind.ostw] When a player is blind, put an orb in front of them
 Event.OngoingPlayer
 if (blinders.Length > 0)
 {
+  BigMessage(EventPlayer(), <"Blinded">);
   // StartCamera(EventPlayer(), EventPlayer().EyePosition(), EventPlayer().EyePosition() + EventPlayer().FacingDirection(), 0);
   if (blindnessDisablesHUD) {
     DisableScoreboard();
