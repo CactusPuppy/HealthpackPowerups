@@ -279,7 +279,7 @@ globalvar Powerup[] possiblePowerups = [
     color_R: 100,
     color_G: 50,
     color_B: 200,
-    duration: WorkshopSettingInteger("Blindness", "Blindness Powerup Duration", 4, 1, 60, -1),
+    duration: WorkshopSettingInteger("Blindness", "Blindness Powerup Duration", 3, 1, 60, -1),
     icon: IconString(Icon.Eye),
     OnPowerupActivation: (player) => {
       AllPlayers(OppositeTeamOf(TeamOf(player))).blinders.ModAppend(player);
