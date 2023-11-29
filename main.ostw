@@ -29,7 +29,7 @@ import "powerups/powerupStruct.del";
 
 rule: "[main.ostw] When a player picks up a healthpack, issue a PICKUP event"
 Event.OnHealingTaken
-if (IsGameInProgress())
+if (!IsInSetup())
 if (EventWasHealthPack())
 {
   powerupEvent = PlayerPowerupEvent.PICKUP;
